@@ -1,5 +1,5 @@
 # archimate-explorer
-A navigator to search and explorer Archi information
+A navigator to search and explore Archi information
 
 ![screenshot](https://raw.githubusercontent.com/steve-vincent/archimate-explorer/master/screen.png "Screenshot")
 
