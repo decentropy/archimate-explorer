@@ -14,5 +14,5 @@ This is a python(flask) web server, which allows searching and navigating Archi 
 ### Instructions
 - Download and run: 'python flaskapp.py'
 - Open browser, e.g. http://localhost
-- Follow instructions in welcome.html, to export your Archi data.
+- Follow instructions in welcome.html, to export your Archi data. (it's initially using Archinsurance example data)
 
