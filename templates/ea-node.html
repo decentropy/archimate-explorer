@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <title>{{label}}</title>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+// http://visjs.org - display network graph
+
+var nodes = null;
+var edges = null;
+var network = null;
+
+function draw() {
+nodes = {{ nlist|safe }};
+edges = {{ elist|safe }};
+
+// create a network
+var container = document.getElementById('mynetwork');
+var data = {
+  nodes: nodes,
+  edges: edges
+};
+
+var options = {
+    edges: {
+      arrows: {
+        to: {
+          scaleFactor: 0.5
+        }
+      }
+    }
+};
+
+network = new vis.Network(container, data, options);
+network.on("click", function (params) {
+	if (params.nodes.length>0){
+		url = '{{ docpath }}' + params.nodes + '.html';
+		document.getElementById("info").src = url;
+	}
+});
+
+network.on("doubleClick", function (params) {
+	location.href = params.nodes;
+});
+
+}
+</script>
+
+</head>
+<body style="background-color: white; font-family: sans-serif;"  onload="draw()">
+
+{% include '_searchbox.html' %}
+
+<div align="center" style="font-size:150%; margin-bottom:15px;"><b>'{{label}}' Relationships</b></div>
+
+<div align="center">
+Double-click item recenter
+<div id="mynetwork" style="width: 860px; height: 450px; border: 1px solid lightgray;"></div>
+<div><a href="#" onclick="window.open('/static/icons/_legend.png','legend','width=1100,height=400')">Icon Help</a></div>
+<iframe id="info" style="width:860px; height:250px; border:0px;" src="/static/iframe.html"></iframe>
+</div>
+
+
+
+</body>
+</html>
+
