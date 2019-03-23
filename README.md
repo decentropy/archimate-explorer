@@ -16,3 +16,6 @@ This application allows searching repository model elements and navigating relat
 - Open browser, e.g. http://localhost
 - Follow instructions in welcome.html, to export your Archi data. (it's initially using Archinsurance example data)
 
+### Advanced Tip
+You can add a search box and "visualizer" links in your HTML report, by customizing your report plugin STL files.
+Bug me if you're interested... can add details.
