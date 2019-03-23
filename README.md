@@ -4,7 +4,7 @@ A navigator to search and explore Archi information
 ![screenshot](https://raw.githubusercontent.com/steve-vincent/archimate-explorer/master/screen.png "Screenshot")
 
 ## About
-This is a python(flask) web server, which allows searching and navigating Archi elements and relationships. It's intended to emulate the 'Visualizer' tab in Archi.
+This is a python(flask) web server, which allows searching and navigating Archi elements and relationships via web browser. It's intended to expose functionality of the 'Visualizer' tab in Archi, to those who don't have Archi installed.
 
 ## Get started
 
