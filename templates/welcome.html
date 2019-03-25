@@ -8,22 +8,27 @@
 
 {% include '_searchbox.html' %}
 
-Search for an element to get started.
 <hr>
 
-<h2>How to explore Archi data</h2>
+<h2>ArchiMate Explorer</h2>
+If you've just downloaded this, it's initialized with <a href="https://github.com/archimatetool/ArchiModels">Archinsurance</a> model. 
+<br>
+Try it, by searching for something (e.g. "CRM"), to find matching nodes to explore <a href="http://localhost/node/1393">like this one</a>.
+
+<h2>Set up your model</h2>
+<h3>Export your Archi model</h3>
 <ol>
-<li>Export CSV to 'data' folder
-<li>Click <a href="refresh">refresh</a>, to process CSV
+<li>From Archi, export CSV into 'static/data' folder
+<li>Then, <a href="refresh">click here to ingest CSV as graph data</a>.
 </ol>
 
-<h2>How to expose documentation</h2>
-*Edit ELEMENTS_PATH in 'config.py', to the elements subfolder
+<h3>Export your Archi documentation</h3>
 <ol>
-<li>Generate HTML report in 'static/report' folder
+<li>From Archi, generate HTML report into 'static/report' folder
+<li>Then, edit 'config.py' with path to elements subfolder.
 </ol>
+
 
 
 </body>
 </html>
-
