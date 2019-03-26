@@ -2,7 +2,7 @@
 A web application to search and explore ArchiMate models.
 
 ## About
-This web application let's others explore your repository, by searching model elements and traversing (network graph) relationships . It's intended to expose basic functionality of the 'Visualizer' tab in Archi, for a broader audience. It is a python(flask) web server which ingests CSV data exported from Archi. 
+This web application let's a broader audience explore your repository, by searching model elements and traversing (network graph) relationships. It's similar to the 'Visualizer' tab in Archi. A python(flask) web server ingests CSV data exported from Archi.
 
 ![screenshot](https://raw.githubusercontent.com/steve-vincent/archimate-explorer/master/screen.png "Screenshot")
 
