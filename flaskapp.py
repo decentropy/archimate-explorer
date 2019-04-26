@@ -26,7 +26,7 @@ def refreshea(): #extract network/graph data: serialize into pickle
     df = pd.read_csv(os.path.join(config.DATA_DIR, 'relations.csv'))
     df['Source'] = df['Source'].astype(str)
     df['Target'] = df['Target'].astype(str)
-    G = nx.from_pandas_edgelist(df, source='Source', target='Target', create_using=nx.Graph())
+    G = nx.from_pandas_edgelist(df, source='Target', target='Source', create_using=nx.DiGraph()) #backwards, not sure why
 
     #add nodes
     df = pd.read_csv(os.path.join(config.DATA_DIR, 'elements.csv'))   
@@ -85,11 +85,14 @@ def reponode(nodeid):
     nlist = [G.node[nodeid]]
     for g in G.neighbors(nodeid):
         nlist.append(G.node[g])
+    for g in G.predecessors(nodeid):
+        nlist.append(G.node[g])
     
     nx.set_edge_attributes(G, 'arrows', 'to')
     
     elist = []
-    for e in nx.edges(G, G.neighbors(nodeid)):
+    nids = [n['id'] for n in nlist]
+    for e in nx.edges(G, nids):
         elist.append(fedge(e))
         
     return render_template('ea-node.html', label=G.node[nodeid]['label'], docpath=config.ELEMENTS_PATH, nodeid=nodeid, nlist=nlist, elist=elist)
