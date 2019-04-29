@@ -136,7 +136,6 @@ def reponode(nodeid):
     views = {}
     for vid in diagdict['nodeviews']['id-'+nodeid]:
         views[vid[3:]] = diagdict['viewnames'][vid]
-    print(views)
         
     return render_template('ea-node.html', label=G.node[nodeid]['label'], views=views, nlist=nlist, elist=elist, modelid=MODELID)
 
