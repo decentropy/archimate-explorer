@@ -120,10 +120,13 @@ def reponode(nodeid):
     nx.set_edge_attributes(G, 'arrows', 'to')
     #node list
     nlist = [G.node[nodeid]]
+    nids = [] #avoid dupes
     for g in G.neighbors(nodeid):
         nlist.append(G.node[g])
+        nids.append(G.node[g]['id']) #watch dupes
     for g in G.predecessors(nodeid):
-        nlist.append(G.node[g])    
+        if G.node[g]['id'] not in nids: #no dupes
+            nlist.append(G.node[g])
     #edge list
     elist = []
     nids = [n['id'] for n in nlist]
