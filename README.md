@@ -1,8 +1,8 @@
 # Archimate-Explorer
 
-This web application let's a broader audience explore your repository, by searching model elements and traversing (network graph) relationships. It's similar to the 'Visualizer' tab in Archi. A python(flask) web server ingests CSV data exported from Archi.
+This web application allows users to search and navigate your ArchiMate model. A python(flask) web server parses XML exported from Archi. 
 
-![screenshot](https://raw.githubusercontent.com/steve-vincent/archimate-explorer/master/screen.png "Screenshot")
+<kbd>![screenshot](https://raw.githubusercontent.com/steve-vincent/archimate-explorer/master/screen.png "Screenshot")</kbd>
 
 ## Get started
 
@@ -15,4 +15,4 @@ This web application let's a broader audience explore your repository, by search
 - Follow instructions in welcome.html, to export your Archi data. (it's initially using Archinsurance example data)
 
 ### Advanced Tip
-You can add a search box and "visualizer" links in your Archi published HTML, by customizing your report plugin STL files - so users can use them together. Bug me if you're interested... can add detailed instructions.
+This UI can be integrated into your Archi published HTML, customizing your report plugin STL files - so users can use them together.
