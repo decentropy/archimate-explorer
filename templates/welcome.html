@@ -10,25 +10,21 @@
 
 <hr>
 
+
 <h2>ArchiMate Explorer</h2>
-If you've just downloaded this, it's initialized with <a href="https://github.com/archimatetool/ArchiModels">Archinsurance</a> model. 
-<br>
-Try it, by searching for something (e.g. "CRM"), to find matching nodes to explore <a href="http://localhost/node/1393">like this one</a>.
+If you've just downloaded this, it's initialized with <a href="https://github.com/archimatetool/ArchiModels">Archinsurance</a> model. Try a search and explore, then read below to import your own model.
 
-<h2>Set up your model</h2>
-<h3>Export your Archi model</h3>
+<h2>Use your own model</h2>
 <ol>
-<li>From Archi, export CSV into 'static/data' folder
-<li>Then, <a href="refresh">click here to ingest CSV as graph data</a>.
+<li>From Archi, export "Open Exchange" XML into 'static/data' folder
+<li>From Archi, generate HTML report into 'static/reports' folder
+<li>Edit config section of flaskapp.py with your own values.
+<li><a href="/refresh">Then click here to process the data</a>.
 </ol>
 
-<h3>Export your Archi documentation</h3>
-<ol>
-<li>From Archi, generate HTML report into 'static/report' folder
-<li>Then, edit 'config.py' with path to elements subfolder.
-</ol>
 
 
 
 </body>
 </html>
+
