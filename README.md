@@ -15,4 +15,4 @@ This web application allows users to search and navigate your ArchiMate model. A
 - Follow instructions in welcome.html, to export your Archi data. (it's initially using Archinsurance example data)
 
 ### Advanced Tip
-This UI can be integrated into your Archi published HTML, customizing your report plugin STL files - so users can use them together.
+This UI can be integrated into Archi published HTML, customizing your report plugin STL files.
