@@ -1,69 +1,182 @@
-<!doctype html>
-<html>
-<head>
-  <title>{{label}}</title>
+{% include '_header.html' %}
 
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+<title>Visualize: {{label}}</title>
+
+<style>
+body {padding-left:20px;padding-right:20px;}
+{% include '_style-tag.css' %}
+</style>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
 
 <script type="text/javascript">
 
+// globals
+var network = null;
+var nodes = {{ nlist|safe }};
+//style center node
+nodes[0].font={multi:true};
+nodes[0].label="<b>" + nodes[0].label + "</b>";
 
-// http://visjs.org - display network graph
-function draw() {
-  var nodes = {{ nlist|safe }};
-  var edges = {{ elist|safe }};
-  var network = null;
+var edges = {{ elist|safe }};
+//init filter from querystring
+var filterstr = '';
+if (window.location.search.split("filter=")[1]) filterstr = window.location.search.split("filter=")[1];
 
-  // network object
-  var container = document.getElementById('mynetwork');
-  var data = {
-    nodes: nodes,
-    edges: edges
-  };
-
-  var options = {
-      edges: {
-        arrows: {
-          to: {
-            scaleFactor: 0.5
-          }
-        }
-      }
-  };
-  //network click handlers
-  network = new vis.Network(container, data, options);
-  network.on("click", function (params) {
-	  if (params.nodes.length>0){
-		  url = '/static/report/{{ modelid }}/elements/' + params.nodes + '.html';
-		  document.getElementById("info").src = url;
-	  }
-  });
-  network.on("doubleClick", function (params) {
-	  location.href = params.nodes;
-  });
+function buildUrl(id){
+	return "/node/" + id + "?filter=" + filterstr + location.hash
 }
+
+// draw page
+function drawpage() {
+	document.getElementById('mynetwork').style.height = window.innerHeight-150 + "px"; //dynamic resize
+	if (location.hash=="#list") listview();
+	else networkview();
+}
+
+// draw list/table mode
+function listview() {
+	console.log('list view');
+	document.getElementById("graphview").style.display='none';
+	document.getElementById("listview").style.display='block';
+	var lhtml = '<table style="border-spacing:5px; border-collapse:separate;"><tr style="background-color:#eeeeee;"><td>Name</td><td>Type</td></tr><tr>';
+	var lnodes = nodes.slice();
+	lnodes.shift();
+	lnodes.forEach(function(n){
+		lhtml += '<tr><td><a target="element" href="/static/{{ modelid }}/elements/' + n.id + '.html">' + n.label + '</a></td><td><small>' + n.type + '</small></td></tr>';
+	});
+	lhtml += '</table>';
+	document.getElementById('mynetwork').innerHTML = lhtml;
+	window.location.hash = 'list';
+}
+
+// draw visual/graph mode
+function networkview() {
+	// https://github.com/visjs/vis-network
+	document.getElementById("graphview").style.display='block';
+	document.getElementById("listview").style.display='none';
+	document.getElementById('mynetwork').innerHTML = '';
+	window.location.hash = '';
+
+	// create a network
+	var container = document.getElementById('mynetwork');
+	var data = {
+	  nodes: nodes,
+	  edges: edges
+	};
+
+	// styles, options
+	var options = {
+		physics:{
+	  	enabled: true
+		},
+		nodes: { borderWidth: 0, shadow: true, color: {background: '#ffffff'}, shapeProperties: { useBorderWithImage: true } },
+		edges: { shadow: false }
+	};
+
+	network = new vis.Network(container, data, options);
+
+	// click handling
+	network.on("click", function (params) {
+		if (params.nodes.length>0){
+			window.open('/static/{{ modelid }}/elements/' + params.nodes + '.html', 'element');
+		}
+	});
+	network.on("doubleClick", function (params) {
+		if (params.nodes.length>0){
+			window.open('/static/{{ modelid }}/elements/' + params.nodes + '.html', 'element');
+			location.href = buildUrl(params.nodes);
+		}
+	});
+}
+
 </script>
 
+
 </head>
-<body style="background-color: white; font-family: sans-serif;"  onload="draw()">
+<body>
 
-{% include '_searchbox.html' %}
+<h2>{{label}} <small><i>({{type}})</i></small></h2>
 
-<div align="center" style="font-size:150%; margin-bottom:15px;"><b>'{{label}}' Relationships</b></div>
+<table width="100%">
+<tr><td width="75%">
+<!-- Graph/List Panel -->
+	<div style="height:30px">
+		<span style="float:right">
+			<a class="btn btn-link" title="share this view" href="#" onclick="prompt('URL to this view:', window.location.hostname + '/static/index.html#node-' + location.href.split('node/')[1])"><span class="glyphicon glyphicon-share"></span> Share</a>
+			<a class="btn btn-link" title="ArchiMate help" target="_blank" href="/static/_pages/archimate.html"><span class="glyphicon glyphicon-question-sign"></span> ArchiMate</a>
+		</span>
+		<div id="listview" style="display:none;">
+			<span style="float:left;">
+				<a class="btn btn-primary" title="list view" href="javascript:listview()"><span class="glyphicon glyphicon-list"></span></a>
+			  <a class="btn btn-default" title="relations view" href="javascript:networkview()"><span class="glyphicon glyphicon-eye-open"></span></a>
+			</span>
+		</div>
+		<div id="graphview" style="display:none;">
+			<span style="float:left;">
+				<a class="btn btn-default" title="list view" href="javascript:listview()"><span class="glyphicon glyphicon-list"></span></a>
+				<a class="btn btn-primary" title="relations view" href="javascript:networkview()"><span class="glyphicon glyphicon-eye-open"></span></a>
+				&nbsp;<i>Double-click to drill down</i>
+			</span>
+		</div>
+	</div>
 
-<div align="center">
-Used in: 
-  {% for key, value in views.iteritems() %}
-    <a target="info" href="/static/report/{{ modelid }}/views/{{ key }}.html">{{ value }}</a>; 
-  {% endfor %}
-<hr>
-Double-click item recenter
-<div id="mynetwork" style="width: 860px; height: 400px; border: 1px solid lightgray;"></div>
-<div><a href="#" onclick="window.open('/static/icons/_legend.png','legend','width=1100,height=400')">Icon Help</a></div>
-<iframe name="info" id="info" style="width:860px; height:350px; border:0px;" src="/static/iframe.html"></iframe>
-</div>
+	<div id="archimate" style="display:none"><img src="/static/_icons/_legend.png" width="100%"></div>
 
+	<!-- Dynamic View Div -->
+	<div id="mynetwork" style="overflow: auto; width: 100%; height: 500px; border: 1px solid #eeeeee;"></div>
+	<!-- Dynamic View Div -->
+
+</td>
+<td valign="top" style="padding:10px;">
+
+
+	<!-- Filtering -->
+	<a class="btn btn-default" title="filter layers" href="javascript:$('#filter').toggle()"><span class="glyphicon glyphicon-filter"></span></a>
+	<span id="filter" style="display:none;background-color:#eeeeee; font-size:90%">
+		<span class="Strategy" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="s" checked>Strategy</input></span>
+		<span class="Motivation" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="m" checked>Motivation</input></span>
+		<span class="Business" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="b" checked>Business</input></span>
+		<span class="Application" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="a" checked>Application</input></span>
+		<span class="Technology" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="t" checked>Technology</input></span>
+		<span class="Implementation" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="i" checked>Implementation</input></span>
+		<span class="Other" style="white-space:nowrap;"><input class="lfilter" type="checkbox" id="o" checked>Other</input></span>
+	</span>
+	<script>
+	//set checkboxes per querystring
+	if (filterstr){
+		for (var i = 0; i < filterstr.length; i++) {
+			document.getElementById(filterstr.charAt(i)).checked = false;
+		}
+	}
+	//update querystring from checkboxes
+	$('.lfilter:checkbox').change(function() {
+			filterstr='';
+			$('.lfilter:checkbox:not(:checked)').each(function(idx,obj){ filterstr+=this.id; });
+			location.href = buildUrl('{{nodeid}}');
+	});
+	</script>
+	<!-- Filtering -->
+
+	<!-- View Usage -->
+	<hr>Used in views:
+	<ul style="font-size:90%">
+	{% for key, value in views.items() %}
+	   <li style="margin-top:10px;"><a target="view" href="/static/{{ modelid }}/views/{{ key }}.html">{{ value }}</a>
+	{% endfor %}
+	</ul>
+
+</td>
+</tr></table>
+
+
+<script>
+$(document).ready(function(){
+  drawpage();
+});
+</script>
 
 
 </body>
