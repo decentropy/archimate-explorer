@@ -1,152 +1,181 @@
-""" This is the web app server. """
+﻿""" This is the web app server. """
 
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, jsonify
 import pandas as pd
 from datetime import datetime
 import networkx as nx
+import os
 import random
 import string
-import os
 import xml.etree.ElementTree as ET
 import re
 import pickle
+import json
+import ea
 
-
-#========= YOUR CONFIG HERE =============
-MODELNAME = "Archisurance"
-MODELID = "11f5304f" #find in your xml
-#========================================
 
 app = Flask(__name__)
 app.debug = True
 
-#Paths to use (xml, html)
-approot = os.path.dirname(os.path.abspath(__file__))
-datadir = os.path.join(approot, "static", "data")
+eadata = ea.dataobj() #persistent data
+
+#=======================================
+#    UI & RENDER
+#=======================================
 
 
-#home
+#test
+@app.route('/test')
+def test():
+    return 'done.'
+
+
+# Main/home
+# -------------------------------------------------
 @app.route('/')
-def index(): 
-    return render_template('welcome.html')
-
-#refresh data
-@app.route('/refresh', methods=['GET'])
-def refreshea():
-    #get xml
-    with open(os.path.join(datadir, MODELNAME+".xml"), 'r') as myfile:
-        xmlstr = myfile.read()
-    xmlstr = re.sub(' xmlns="[^"]+"', '', xmlstr, count=1)
-    xmlstr = re.sub(' xsi\:', ' ', xmlstr)
-    root = ET.fromstring(xmlstr)
-
-    #parse relationships network ==================
-    #add edges
-    edgelist = []
-    for el in root.findall("./relationships/"):
-        edgelist.append(el.attrib["source"][3:] + ' ' + el.attrib["target"][3:])    
-    G = nx.parse_edgelist(edgelist, create_using=nx.DiGraph()) 
-    #add nodes
-    elemlist = []
-    for el in root.findall("./elements/"):
-        elemlist.append((el.attrib["identifier"][3:], el.attrib["type"], el.find("name").text))
-    df = pd.DataFrame.from_records(elemlist, columns=['ID','Type','Name'])
-    df.to_pickle(os.path.join(datadir, "ea-elements.pickle"))
-    #format for visjs
-    df['Shape'] = "image"
-    df['Imgpath'] = "/static/icons/" + df.Type.str.lower() + ".png"
-    df = df.set_index('ID')
-    df['id'] = df.index
-    G.add_nodes_from(df.index.tolist())
-    #node attributes
-    nx.set_node_attributes(G, values=pd.Series(df.Name).to_dict(), name='label')
-    nx.set_node_attributes(G, values=pd.Series(df.Shape).to_dict(), name='shape') 
-    nx.set_node_attributes(G, values=pd.Series(df.Imgpath).to_dict(), name='image')
-    nx.set_node_attributes(G, values=pd.Series(df.id).to_dict(), name='id')    
-    #serialize
-    nx.write_gpickle(G, os.path.join(datadir, "ea-nxgraph.pickle"))
-
-    #parse views usage ==================
-    viewnames = {}
-    nodeviews = {}
-    for el in root.findall("./views/diagrams/"):
-        vid = el.attrib["identifier"]
-        viewnames[vid] = el.find("name").text #add to viewnames
-        for el1 in el.findall(".//node"):
-            if el1.attrib.get("elementRef"):
-                nid = el1.attrib["elementRef"]
-                if not nodeviews.get(nid):
-                    nodeviews[nid] = []
-                nodeviews[nid].append(vid) #add to nodeviews
-    diagrams = {'viewnames': viewnames, 'nodeviews': nodeviews}
-    #serialize
-    with open(os.path.join(datadir, "ea-diagrams.pickle"), 'wb') as handle:
-        pickle.dump(diagrams, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #return
-    return redirect("/")
+def index():
+    return redirect("/static/index.html")
 
 
-#============= EA SEARCH ====================
+# Search UI (wrapper frame)
+# -------------------------------------------------
+@app.route('/search/<path:type>/<path:term>', methods=['GET'])
+def ui_search(type, term):
+    return render_template('ea-search-frame.html', type=type, label=term)
 
-#show links to matches found in elements.csv
-@app.route('/search/<path:term>', methods=['GET'])
-def easearch(term):
-    df = pd.read_pickle(os.path.join(datadir, "ea-elements.pickle"))[['ID','Type','Name']]
-    df = df[(df.Name.str.contains(term, case=False, regex=False))|(df.Type.str.contains(term, case=False, regex=False))]
-    results = "No matches found."
+
+# Search Results Frame UI
+# -------------------------------------------------
+@app.route('/results/<path:type>/<path:term>', methods=['GET'])
+def ui_results(type, term):
+    df = eadata.dfprops
+    df = df[(df[type].str.contains(term, case=False, regex=False))]
+    df = df.sort_values(['Type','Name'], ascending=[True,True]).reset_index(drop=True)
+    respstr = "No matches found."
     if not df.empty:
-        df['Results'] = df.apply(lambda x: "<li><a href='/node/" + x.ID + "'>" + x.Type + ": " + x.Name + "</a>", axis=1)
-        results = ''.join(df['Results'].tolist())
-    return render_template('ea-search.html', label=term, results=results)
+        df['Results'] = df.apply(lambda x: "<li><a href='javascript:clickResult(\"" + x.ID + "\")'>" + x.Type + ": " + x.Name + "</a>", axis=1)
+        respstr = ''.join(df['Results'].tolist())
+    return render_template('ea-search-results.html', type=type, label=term, results=respstr)
 
 
-#============= EA VISUALIZER ====================
-
-#format edge
-def fedge(x):
-    edge = {}
-    edge['to'] = x[0]
-    edge['from']= x[1]
-    edge['arrows']='to'
-    return edge
-
-#show relationships for an elements
+# Node UI - Relations and Views
+# -------------------------------------------------
 @app.route('/node/<nodeid>', methods=['GET'])
-def reponode(nodeid):     
+def UI_node(nodeid):
     #load graph data
-    G = nx.read_gpickle(os.path.join(datadir, "ea-nxgraph.pickle"))
+    G = eadata.G
     if not G.node.get(nodeid):
-        return '<h3>No element found.</h3>'
-    nx.set_edge_attributes(G, 'arrows', 'to')
-    #node list
-    nlist = [G.node[nodeid]]
+        return '<h2>No relationships for this element.</h2>'
+    nlist = [G.node[nodeid]] #node list of dicts
+    views = {} #view dict
+    elist = [] #edge list of dicts
+
+    #filter by layer: sbatpmio
+    filter = request.args.get('filter')
+    filterlookup = {"s":"strategy", "b":"business", "a":"application", "t":"technology", "p":"physical", "m":"motivation", "i":"implementation", "o":"other"}
+
+    def fedge(x): #format for html
+        edge = {}
+        edge['to'] = x[0]
+        edge['from']= x[1]
+        edge['arrows']='from'
+        return edge
+
+    def addnode(x):
+        #check filter
+        if filter:
+            for letter in filter:
+                if x["type"] in ea.layers[filterlookup[letter]]:
+                    return False
+        #add node
+        nlist.append(x)
+        return True
+
+    #iterate graph
     nids = [] #avoid dupes
-    for g in G.neighbors(nodeid):
-        nlist.append(G.node[g])
-        nids.append(G.node[g]['id']) #watch dupes
+    for g in G.successors(nodeid):
+        if G.node[g]['type'] == "view":
+            views[G.node[g]['id'].replace("id-","")] = G.node[g]['label']
+        else:
+            if addnode(G.node[g]):
+                nids.append(G.node[g]['id']) #watch dupes
     for g in G.predecessors(nodeid):
         if G.node[g]['id'] not in nids: #no dupes
-            nlist.append(G.node[g])
+            addnode(G.node[g])
     #edge list
-    elist = []
-    nids = [n['id'] for n in nlist]
-    for e in nx.edges(G, nids):
+    buildedges = [n['id'] for n in nlist]
+    for e in nx.edges(G, buildedges):
         elist.append(fedge(e))
 
-    #load diagram data
-    with open(os.path.join(datadir, "ea-diagrams.pickle"), 'rb') as handle:
-        diagdict = pickle.load(handle)
-    views = {}
-    for vid in diagdict['nodeviews']['id-'+nodeid]:
-        views[vid[3:]] = diagdict['viewnames'][vid]
-        
-    return render_template('ea-node.html', label=G.node[nodeid]['label'], views=views, nlist=nlist, elist=elist, modelid=MODELID)
+    #get label
+    dfe =  eadata.dfe.loc[eadata.dfe['ID'] == nodeid]
+    label = dfe['Name'].values[0]
+    type = dfe['Type'].values[0]
+
+    #TODO - fix me, this WAS sloppy attribute rename for visjs 'Plan' coloring
+    nlist2 = []
+    for n in nlist:
+        #n["group"] = n["plan"]
+        nlist2.append(n)
+
+    return render_template('ea-node.html', nodeid=nodeid, label=label, type=type, nlist=nlist2, elist=elist, views=views)
 
 
 #=======================================
+#    DATA PARSE & REFRESH
 #=======================================
 
+# Main refresh
+# -------------------------------------------------
+@app.route('/refreshea', methods=['GET'])
+def refreshea():
+    eadata.refresh()
+    refresh_html()
+    return redirect("/static/index.html")
+
+
+
+# HTML Refresh
+# -------------------------------------------------
+#main function
+def refresh_html():
+    htmlpath = os.path.join(ea.path_root, "static")
+
+    def gethtmlfiles(directory):
+        filelist = []
+        for filename in os.listdir(directory):
+            if filename.endswith(".html"):
+                filelist.append(os.path.join(directory, filename))
+                continue
+            else:
+                continue
+        return filelist
+
+    def refresh_url_randomize(filepath):
+        # Read in the file
+        with open(filepath, 'r') as file :
+          filedata = file.read()
+
+        # Replace the target string
+        randstr = ''.join(random.choice(string.ascii_letters) for m in range(5))
+        filedata = filedata.replace('.html', '.html?' + randstr)
+        filedata = filedata.replace('.png', '.png?' + randstr)
+
+        # Write the file out again
+        with open(filepath, 'w') as file:
+          file.write(filedata)
+
+    #randomize urls - CHROME IFRAME CACHING
+    refresh_url_randomize(os.path.join(htmlpath, "index.html"))
+    for htmlfiles in gethtmlfiles(os.path.join(htmlpath, ea.MODELID, "views")):
+        refresh_url_randomize(htmlfiles)
+    for htmlfiles in gethtmlfiles(os.path.join(htmlpath, ea.MODELID, "elements")):
+        refresh_url_randomize(htmlfiles)
+
+
+#=======================================
+#    START
+#=======================================
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, threaded=True)
-
