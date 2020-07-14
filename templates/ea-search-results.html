@@ -1,0 +1,19 @@
+{% include '_header.html' %}
+
+<title>Search: {{label}}</title>
+
+</head>
+<body style="padding:10px;">
+
+
+<script>
+function clickResult(id){
+	var url = '/node/' + id;
+	window.open(url, "view");
+}
+</script>
+
+{{results|safe}}
+
+</body>
+</html>
