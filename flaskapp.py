@@ -118,7 +118,7 @@ def UI_node(nodeid):
         #n["group"] = n["plan"]
         nlist2.append(n)
 
-    return render_template('ea-node.html', nodeid=nodeid, label=label, type=type, nlist=nlist2, elist=elist, views=views)
+    return render_template('ea-node.html', nodeid=nodeid, label=label, type=type, nlist=nlist2, elist=elist, views=views, modelid=ea.MODELID)
 
 
 #=======================================
